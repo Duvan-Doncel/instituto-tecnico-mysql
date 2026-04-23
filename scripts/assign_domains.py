@@ -3,10 +3,20 @@
 assign_domains.py — Asignación de dominios anticopia para bootcamps ergrato-dev
 
 Uso:
+    # Solo CSV
     python3 scripts/assign_domains.py --input aprendices.csv --output asignaciones.csv
+
+    # Solo tabla en consola
     python3 scripts/assign_domains.py --input aprendices.csv --trimestre 2026-Q2
-    python3 scripts/assign_domains.py --input aprendices.csv --pdf asignaciones.pdf
-    python3 scripts/assign_domains.py --input aprendices.csv --output out.csv --pdf out.pdf
+
+    # Solo PDF
+    python3 scripts/assign_domains.py --input aprendices.csv --trimestre 2026-Q2 --pdf asignaciones.pdf
+
+    # PDF + CSV (sin tabla en consola)
+    python3 scripts/assign_domains.py --input aprendices.csv --trimestre 2026-Q2 --output asignaciones.csv --pdf asignaciones.pdf
+
+    # Los tres simultáneos (tabla en consola + CSV + PDF)
+    python3 scripts/assign_domains.py -i aprendices.csv -t 2026-Q2 -o asig.csv -p asig.pdf
 
 Formato del CSV de entrada (aprendices.csv):
     nombre,ficha,bootcamp
