@@ -5,6 +5,8 @@ assign_domains.py — Asignación de dominios anticopia para bootcamps ergrato-d
 Uso:
     python3 scripts/assign_domains.py --input aprendices.csv --output asignaciones.csv
     python3 scripts/assign_domains.py --input aprendices.csv --trimestre 2026-Q2
+    python3 scripts/assign_domains.py --input aprendices.csv --pdf asignaciones.pdf
+    python3 scripts/assign_domains.py --input aprendices.csv --output out.csv --pdf out.pdf
 
 Formato del CSV de entrada (aprendices.csv):
     nombre,ficha,bootcamp
@@ -235,6 +237,127 @@ def save_csv(rows: list[dict], filepath: str) -> None:
         writer.writerows(rows)
 
 
+def save_pdf(rows: list[dict], filepath: str, trimestre: str | None = None) -> None:
+    """Genera un PDF profesional con la tabla de asignaciones."""
+    try:
+        import datetime
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        )
+        from reportlab.lib.styles import ParagraphStyle
+    except ImportError:
+        print(
+            "Error: se requiere reportlab para generar PDF.\n"
+            "  pip install reportlab",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    C_DARK = colors.HexColor("#1a1a2e")
+    C_BLUE = colors.HexColor("#336791")
+    C_ALT  = colors.HexColor("#f2f7fb")
+    C_WHITE = colors.white
+    C_GRAY  = colors.HexColor("#6c757d")
+    C_TEXT  = colors.HexColor("#212529")
+    C_GRID  = colors.HexColor("#ced4da")
+    C_META  = colors.HexColor("#adb5bd")
+
+    cell_style = ParagraphStyle(
+        "cell", fontName="Helvetica", fontSize=8, textColor=C_TEXT, leading=11
+    )
+    hdr_style = ParagraphStyle(
+        "hdr", fontName="Helvetica-Bold", fontSize=8, textColor=C_WHITE, leading=11
+    )
+
+    # ── Tabla de asignaciones ─────────────────────────────────────────────
+    col_labels = ["#", "Nombre", "Ficha", "Bootcamp", "Dominio asignado", "Entidades principales"]
+    table_data = [[Paragraph(h, hdr_style) for h in col_labels]]
+    for i, r in enumerate(rows, 1):
+        table_data.append([
+            Paragraph(str(i),         cell_style),
+            Paragraph(r["nombre"],    cell_style),
+            Paragraph(r["ficha"],     cell_style),
+            Paragraph(r["bootcamp"],  cell_style),
+            Paragraph(r["dominio"],   cell_style),
+            Paragraph(r["entidades"], cell_style),
+        ])
+
+    # Landscape A4: 29.7 cm − 2 × 1.5 cm márgenes = 26.7 cm útiles
+    col_widths = [0.8*cm, 4.5*cm, 2.2*cm, 3.0*cm, 5.0*cm, 11.2*cm]
+
+    assignments_table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    assignments_table.setStyle(TableStyle([
+        ("BACKGROUND",     (0, 0), (-1, 0),  C_BLUE),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [C_WHITE, C_ALT]),
+        ("GRID",           (0, 0), (-1, -1), 0.4, C_GRID),
+        ("LINEBELOW",      (0, 0), (-1, 0),  1.2, C_DARK),
+        ("TOPPADDING",     (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING",  (0, 0), (-1, -1), 5),
+        ("LEFTPADDING",    (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING",   (0, 0), (-1, -1), 6),
+        ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN",          (0, 0), (0, -1),  "RIGHT"),
+    ]))
+
+    # ── Banner superior ───────────────────────────────────────────────────
+    date_str        = datetime.date.today().strftime("%-d de %B de %Y")
+    trimestre_label = f"Trimestre: {trimestre}  \u00b7  " if trimestre else ""
+
+    title_style = ParagraphStyle(
+        "title", fontName="Helvetica-Bold", fontSize=15, textColor=C_WHITE, leading=18
+    )
+    meta_style = ParagraphStyle(
+        "meta", fontName="Helvetica", fontSize=9, textColor=C_META, leading=12
+    )
+
+    banner = Table(
+        [[
+            Paragraph("Asignaciones de Dominios \u2014 Bootcamp SQL", title_style),
+            Paragraph(
+                f"{trimestre_label}Generado: {date_str}  \u00b7  {len(rows)} aprendices",
+                meta_style,
+            ),
+        ]],
+        colWidths=[15*cm, 11.7*cm],
+    )
+    banner.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), C_DARK),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
+        ("TOPPADDING",    (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN",         (1, 0), (1, 0),   "RIGHT"),
+    ]))
+
+    # ── Pie de página ─────────────────────────────────────────────────────
+    def on_page(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(C_GRAY)
+        canvas.drawRightString(
+            doc.pagesize[0] - 1.5*cm, 0.8*cm, f"P\u00e1gina {doc.page}"
+        )
+        canvas.restoreState()
+
+    # ── Build ─────────────────────────────────────────────────────────────
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=landscape(A4),
+        leftMargin=1.5*cm, rightMargin=1.5*cm,
+        topMargin=1.5*cm,  bottomMargin=2.0*cm,
+        title="Asignaciones de Dominios \u2014 Bootcamp SQL",
+    )
+    doc.build(
+        [banner, Spacer(1, 0.4*cm), assignments_table],
+        onFirstPage=on_page,
+        onLaterPages=on_page,
+    )
+
+
 def print_table(rows: list[dict]) -> None:
     """Imprime el resultado como tabla en consola."""
     col_nombre   = max(len(r["nombre"])   for r in rows)
@@ -287,6 +410,13 @@ def main() -> None:
         default=None,
         help="Semilla numérica para aleatoriedad reproducible (alternativa a --trimestre).",
     )
+    parser.add_argument(
+        "--pdf", "-p",
+        default=None,
+        metavar="FILE",
+        help="Genera un PDF con la tabla de asignaciones (ej. asignaciones.pdf). "
+             "Compatible con --output y salida por consola.",
+    )
     args = parser.parse_args()
 
     # Semilla: trimestre como string hash o número directo
@@ -314,6 +444,10 @@ def main() -> None:
         print(f"Asignaciones guardadas en: {args.output} ({len(assignments)} aprendices)")
     else:
         print_table(assignments)
+
+    if args.pdf:
+        save_pdf(assignments, args.pdf, trimestre=args.trimestre)
+        print(f"PDF generado: {args.pdf} ({len(assignments)} aprendices)")
 
 
 if __name__ == "__main__":
