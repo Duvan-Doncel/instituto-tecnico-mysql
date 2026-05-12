@@ -10,7 +10,7 @@
 
 -- Muestra columnas, tipos y si son NOT NULL (notnull = 1):
 
--- PRAGMA table_info(employees);
+PRAGMA table_info(employees);
 
 
 -- ============================================
@@ -19,13 +19,13 @@
 
 -- Inserta un empleado respetando todos los constraints:
 
--- INSERT INTO employees
---     (id, first_name, last_name, salary, level, department_id)
--- VALUES
---     (10, 'Hugo', 'Reyes', 62000.00, 'mid', 2);
+INSERT INTO employees
+    (id, first_name, last_name, salary, level, department_id)
+VALUES
+    (10, 'Hugo', 'Reyes', 62000.00, 'mid', 2);
 
 -- Verifica que se insertó:
--- SELECT * FROM employees WHERE id = 10;
+SELECT * FROM employees WHERE id = 10;
 
 
 -- ============================================
@@ -34,15 +34,15 @@
 
 -- Calcula el bonus como % del salario; evita división por cero:
 
--- SELECT
---     first_name,
---     salary,
---     COALESCE(bonus, 0)                               AS bonus,
---     ROUND(
---         COALESCE(bonus, 0) / NULLIF(salary, 0) * 100,
---         2
---     )                                                AS bonus_pct
--- FROM employees;
+SELECT
+    first_name,
+    salary,
+    COALESCE(bonus, 0)                               AS bonus,
+    ROUND(
+        COALESCE(bonus, 0) / NULLIF(salary, 0) * 100,
+        2
+    )                                                AS bonus_pct
+FROM employees;
 
 
 -- ============================================
@@ -52,6 +52,6 @@
 -- Busca employees con department_id que no existe en departments.
 -- Resultado esperado: 0 filas (FK garantiza integridad):
 
--- SELECT DISTINCT department_id
--- FROM   employees
--- WHERE  department_id NOT IN (SELECT id FROM departments);
+SELECT DISTINCT department_id
+FROM   employees
+WHERE  department_id NOT IN (SELECT id FROM departments);

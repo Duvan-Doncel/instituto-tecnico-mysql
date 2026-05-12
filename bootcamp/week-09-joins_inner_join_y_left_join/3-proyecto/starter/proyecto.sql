@@ -1,121 +1,319 @@
 -- ============================================
--- PROYECTO SEMANAL: JOINs aplicados a tu dominio
--- Semana 09 — INNER JOIN y LEFT JOIN
+-- PROYECTO SEMANAL: JOINs aplicados al dominio
+-- Semana 09 — INNER JOIN, LEFT JOIN, RIGHT JOIN
+-- Instituto Técnico
+-- Entidades: programs, instructors, students, schedules
 -- ============================================
 
--- NOTA PARA EL APRENDIZ:
--- Adapta este esquema a tu dominio asignado.
--- Ejemplos de adaptación:
---   Biblioteca  → books, members, loans
---   Farmacia    → medicines, suppliers, sales
---   Gimnasio    → members, trainers, routines
---   Restaurante → dishes, categories, orders
--- NO copies uno de estos ejemplos; usa tu dominio propio.
-
-PRAGMA foreign_keys = ON;
+CREATE DATABASE IF NOT EXISTS instituto_tecnico;
+USE instituto_tecnico;
 
 -- ============================================
--- TODO: Renombrar las tablas según tu dominio
+-- PARTE 1: ESQUEMA DE TABLAS
 -- ============================================
 
-DROP TABLE IF EXISTS child_records;
-DROP TABLE IF EXISTS main_items;
-DROP TABLE IF EXISTS reference_table;
+DROP TABLE IF EXISTS schedules;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS instructors;
+DROP TABLE IF EXISTS programs;
 
--- Tabla de referencia (categorías, ubicaciones, tipos, etc.)
-CREATE TABLE reference_table (
-    id   INTEGER PRIMARY KEY,
-    name TEXT    NOT NULL UNIQUE
-    -- TODO: Agregar columnas específicas de tu dominio
+CREATE TABLE programs (
+    program_id      INT           AUTO_INCREMENT PRIMARY KEY,
+    program_name    VARCHAR(100)  NOT NULL UNIQUE,
+    duration_months INT           NOT NULL CHECK (duration_months > 0),
+    cost            DECIMAL(10,2) NOT NULL CHECK (cost > 0)
 );
 
--- Tabla principal de tu dominio
-CREATE TABLE main_items (
-    id           INTEGER PRIMARY KEY,
-    name         TEXT    NOT NULL,
-    -- TODO: Agregar columnas específicas
-    reference_id INTEGER REFERENCES reference_table (id)
+CREATE TABLE instructors (
+    instructor_id   INT           AUTO_INCREMENT PRIMARY KEY,
+    first_name      VARCHAR(50)   NOT NULL,
+    last_name       VARCHAR(50)   NOT NULL,
+    email           VARCHAR(100)  NOT NULL UNIQUE,
+    phone           VARCHAR(20),
+    salary          DECIMAL(10,2) NOT NULL CHECK (salary > 0),
+    is_active       TINYINT       NOT NULL DEFAULT 1,
+    program_id      INT,
+    FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE RESTRICT
 );
 
--- Tabla hija (transacciones, préstamos, ventas, etc.)
-CREATE TABLE child_records (
-    id           INTEGER PRIMARY KEY,
-    recorded_at  TEXT    NOT NULL DEFAULT (DATE('now')),
-    -- TODO: Agregar columnas específicas
-    item_id      INTEGER REFERENCES main_items (id)
+CREATE TABLE students (
+    student_id      INT           AUTO_INCREMENT PRIMARY KEY,
+    identification  VARCHAR(20)   NOT NULL UNIQUE,
+    first_name      VARCHAR(50)   NOT NULL,
+    last_name       VARCHAR(50)   NOT NULL,
+    email           VARCHAR(100)  NOT NULL UNIQUE,
+    phone           VARCHAR(20),
+    age             INT           NOT NULL CHECK (age > 0),
+    is_active       TINYINT       NOT NULL DEFAULT 1,
+    program_id      INT,
+    FOREIGN KEY (program_id) REFERENCES programs(program_id) ON DELETE RESTRICT
+);
+
+CREATE TABLE schedules (
+    schedule_id     INT          AUTO_INCREMENT PRIMARY KEY,
+    program_id      INT          NOT NULL,
+    instructor_id   INT          NOT NULL,
+    day             VARCHAR(20)  NOT NULL,
+    start_time      TIME         NOT NULL,
+    end_time        TIME         NOT NULL,
+    UNIQUE (program_id, instructor_id, day),
+    FOREIGN KEY (program_id)    REFERENCES programs(program_id)       ON DELETE RESTRICT,
+    FOREIGN KEY (instructor_id) REFERENCES instructors(instructor_id) ON DELETE RESTRICT
 );
 
 -- ============================================
--- TODO: Insertar datos de prueba realistas
--- Incluir al menos 1 registro "huérfano" en main_items
--- (un item sin ningún child_record asociado)
+-- PARTE 2: INSERCIÓN DE DATOS — programs (30)
+-- NOTA: Los últimos 3 programas no tienen instructor
+--       asignado para demostrar LEFT JOIN / RIGHT JOIN
 -- ============================================
 
--- INSERT INTO reference_table (name) VALUES (...);
--- INSERT INTO main_items (name, reference_id) VALUES (...);
--- INSERT INTO child_records (item_id) VALUES (...);
-
-
--- ============================================
--- CONSULTA 1: INNER JOIN principal
--- TODO: Une las dos tablas más importantes
--- Muestra solo los registros con relación en ambas
--- ============================================
-
--- SELECT
---     mi.name     AS item,
---     cr.recorded_at
--- FROM main_items  mi
--- INNER JOIN child_records cr ON cr.item_id = mi.id;
-
-
--- ============================================
--- CONSULTA 2: JOIN con tres tablas
--- TODO: Encadena main_items + child_records + reference_table
--- ============================================
-
--- SELECT
---     mi.name  AS item,
---     rt.name  AS category,
---     cr.recorded_at
--- FROM main_items mi
--- INNER JOIN reference_table rt ON mi.reference_id = rt.id
--- INNER JOIN child_records   cr ON cr.item_id      = mi.id;
-
-
--- ============================================
--- CONSULTA 3: LEFT JOIN — todos los registros
--- TODO: Obtén todos los items aunque no tengan child_records
--- ============================================
-
--- SELECT
---     mi.name        AS item,
---     cr.recorded_at AS activity
--- FROM main_items  mi
--- LEFT JOIN child_records cr ON cr.item_id = mi.id;
-
+INSERT INTO programs (program_name, duration_months, cost) VALUES
+('Desarrollo de Software',           12, 4500000.00),
+('Diseño Gráfico',                   10, 3800000.00),
+('Redes y Telecomunicaciones',       12, 4200000.00),
+('Administración de Empresas',       18, 5000000.00),
+('Contabilidad y Finanzas',          18, 4800000.00),
+('Marketing Digital',                 8, 3200000.00),
+('Inteligencia Artificial',          12, 5500000.00),
+('Ciberseguridad',                   10, 4900000.00),
+('Logística y Cadena de Suministro', 14, 4100000.00),
+('Gestión de Proyectos',             10, 3900000.00),
+('Base de Datos',                     8, 3500000.00),
+('Diseño UX/UI',                      8, 3600000.00),
+('Electrónica Industrial',           14, 4300000.00),
+('Mecatrónica',                      16, 4700000.00),
+('Salud Ocupacional',                12, 4000000.00),
+('Gastronomía',                      10, 3700000.00),
+('Turismo y Hotelería',              12, 4100000.00),
+('Fotografía y Video',                8, 3300000.00),
+('Idiomas — Inglés Avanzado',         6, 2800000.00),
+('Idiomas — Francés',                 6, 2800000.00),
+('Idiomas — Portugués',               6, 2700000.00),
+('Enfermería Auxiliar',              18, 5200000.00),
+('Regencia de Farmacia',             18, 5100000.00),
+('Instrumentación Quirúrgica',       24, 6500000.00),
+('Trabajo Social',                   18, 4400000.00),
+('Arquitectura de Interiores',       12, 4600000.00),
+('Producción Musical',               10, 3900000.00),
+('Animación 3D',                     10, 4200000.00),
+-- Estos 2 programas no tienen instructor asignado (para LEFT/RIGHT JOIN)
+('Cloud Computing',                   8, 4800000.00),
+('DevOps y CI/CD',                    8, 5000000.00);
 
 -- ============================================
--- CONSULTA 4: Detectar huérfanos (registros sin actividad)
--- TODO: Agrega WHERE para mostrar solo ítems sin child_records
+-- PARTE 2: INSERCIÓN DE DATOS — instructors (30)
+-- Los últimos 2 no tienen program_id (sin programa asignado)
 -- ============================================
 
--- SELECT
---     mi.name AS item_sin_actividad
--- FROM main_items  mi
--- LEFT JOIN child_records cr ON cr.item_id = mi.id
--- WHERE cr.id IS NULL;
-
+INSERT INTO instructors (first_name, last_name, email, phone, salary, program_id) VALUES
+('Carlos',    'Ramírez',   'c.ramirez@instituto.edu',    '3101111111', 4200000.00,  1),
+('Laura',     'Gómez',     'l.gomez@instituto.edu',      '3102222222', 3800000.00,  2),
+('Andrés',    'Torres',    'a.torres@instituto.edu',      NULL,         4500000.00,  3),
+('Marcela',   'Herrera',   'm.herrera@instituto.edu',    '3104444444', 3900000.00,  4),
+('Felipe',    'Díaz',      'f.diaz@instituto.edu',        NULL,         4100000.00,  5),
+('Valentina', 'Moreno',    'v.moreno@instituto.edu',     '3106666666', 3700000.00,  6),
+('Santiago',  'López',     's.lopez@instituto.edu',      '3107777777', 5200000.00,  7),
+('Daniela',   'Castro',    'd.castro@instituto.edu',      NULL,         4800000.00,  8),
+('Julián',    'Peña',      'j.pena@instituto.edu',       '3109999999', 4000000.00,  9),
+('Natalia',   'Vargas',    'n.vargas@instituto.edu',     '3110000000', 3950000.00, 10),
+('Ricardo',   'Salcedo',   'r.salcedo@instituto.edu',     NULL,         3600000.00, 11),
+('Paula',     'Ríos',      'p.rios@instituto.edu',       '3112222222', 3700000.00, 12),
+('Esteban',   'Mendoza',   'e.mendoza@instituto.edu',    '3113333333', 4300000.00, 13),
+('Camila',    'Ortega',    'c.ortega@instituto.edu',      NULL,         4700000.00, 14),
+('Hernán',    'Blanco',    'h.blanco@instituto.edu',     '3115555555', 4050000.00, 15),
+('Sofía',     'Aguilar',   's.aguilar@instituto.edu',    '3116666666', 3750000.00, 16),
+('Mateo',     'Serrano',   'm.serrano@instituto.edu',     NULL,         4100000.00, 17),
+('Isabella',  'Fuentes',   'i.fuentes@instituto.edu',    '3118888888', 3400000.00, 18),
+('Tomás',     'Cabrera',   't.cabrera@instituto.edu',    '3119999999', 2900000.00, 19),
+('Alejandra', 'Pinto',     'a.pinto@instituto.edu',       NULL,         2900000.00, 20),
+('Diego',     'Estrada',   'd.estrada@instituto.edu',    '3121111111', 2800000.00, 21),
+('Mónica',    'Suárez',    'm.suarez@instituto.edu',     '3122222222', 5100000.00, 22),
+('Gustavo',   'Pinzón',    'g.pinzon@instituto.edu',      NULL,         5000000.00, 23),
+('Adriana',   'Leal',      'a.leal@instituto.edu',       '3124444444', 6200000.00, 24),
+('Roberto',   'Cifuentes', 'r.cifuentes@instituto.edu',  '3125555555', 4500000.00, 25),
+('Paola',     'Naranjo',   'p.naranjo@instituto.edu',     NULL,         4650000.00, 26),
+('Sebastián', 'Vera',      's.vera@instituto.edu',       '3127777777', 3950000.00, 27),
+('Ximena',    'Acosta',    'x.acosta@instituto.edu',     '3128888888', 4250000.00, 28),
+-- Estos 2 instructores no tienen programa asignado (huérfanos para RIGHT JOIN)
+('Rodrigo',   'Mejía',     'r.mejia@instituto.edu',       NULL,         4850000.00, NULL),
+('Luciana',   'Ospina',    'l.ospina@instituto.edu',     '3130000000', 5050000.00, NULL);
 
 -- ============================================
--- CONSULTA 5: Reporte agregado con LEFT JOIN + COUNT
--- TODO: Cantidad de child_records por item (incluye 0)
+-- PARTE 2: INSERCIÓN DE DATOS — students (30)
+-- Los últimos 2 no tienen programa asignado (huérfanos)
 -- ============================================
 
--- SELECT
---     mi.name       AS item,
---     COUNT(cr.id)  AS total_records
--- FROM main_items  mi
--- LEFT JOIN child_records cr ON cr.item_id = mi.id
--- GROUP BY mi.name
--- ORDER BY total_records DESC;
+INSERT INTO students (identification, first_name, last_name, email, phone, age, program_id) VALUES
+('1001', 'Ana',       'Martínez',  'ana.martinez@mail.com',     '3201111111', 20,  1),
+('1002', 'Luis',      'García',    'luis.garcia@mail.com',       NULL,         22,  1),
+('1003', 'Sara',      'Rodríguez', 'sara.rodriguez@mail.com',   '3203333333', 19,  2),
+('1004', 'Jorge',     'Hernández', 'jorge.hernandez@mail.com',   NULL,         21,  2),
+('1005', 'Manuela',   'López',     'manuela.lopez@mail.com',    '3205555555', 20,  3),
+('1006', 'David',     'Martínez',  'david.martinez@mail.com',    NULL,         23,  3),
+('1007', 'Camila',    'González',  'camila.gonzalez@mail.com',  '3207777777', 18,  4),
+('1008', 'Andrés',    'Pérez',     'andres.perez@mail.com',     '3208888888', 25,  4),
+('1009', 'Valeria',   'Sánchez',   'valeria.sanchez@mail.com',   NULL,         20,  4),
+('1010', 'Miguel',    'Ramírez',   'miguel.ramirez@mail.com',   '3210000000', 22,  5),
+('1011', 'Daniela',   'Torres',    'daniela.torres@mail.com',    NULL,         19,  5),
+('1012', 'Carlos',    'Flores',    'carlos.flores@mail.com',    '3212222222', 21,  5),
+('1013', 'Sofía',     'Rivera',    'sofia.rivera@mail.com',     '3213333333', 20,  6),
+('1014', 'Sebastián', 'Morales',   'sebastian.morales@mail.com', NULL,         24,  6),
+('1015', 'Natalia',   'Jiménez',   'natalia.jimenez@mail.com',  '3215555555', 18,  7),
+('1016', 'Felipe',    'Ruiz',      'felipe.ruiz@mail.com',       NULL,         22,  7),
+('1017', 'Isabella',  'Díaz',      'isabella.diaz@mail.com',    '3217777777', 20,  7),
+('1018', 'Alejandro', 'Vargas',    'alejandro.vargas@mail.com', '3218888888', 21,  8),
+('1019', 'Laura',     'Castro',    'laura.castro@mail.com',      NULL,         19,  8),
+('1020', 'Mateo',     'Romero',    'mateo.romero@mail.com',     '3220000000', 23,  9),
+('1021', 'Valentina', 'Mendoza',   'valentina.mendoza@mail.com', NULL,         20,  9),
+('1022', 'Julián',    'Ortega',    'julian.ortega@mail.com',    '3222222222', 22, 10),
+('1023', 'Mariana',   'Guerrero',  'mariana.guerrero@mail.com',  NULL,         18, 10),
+('1024', 'Santiago',  'Medina',    'santiago.medina@mail.com',  '3224444444', 21, 10),
+('1025', 'Paula',     'Reyes',     'paula.reyes@mail.com',      '3225555555', 20, 11),
+('1026', 'Tomás',     'Cruz',      'tomas.cruz@mail.com',        NULL,         24, 11),
+('1027', 'Gabriela',  'Herrera',   'gabriela.herrera@mail.com', '3227777777', 19, 12),
+('1028', 'Ricardo',   'Núñez',     'ricardo.nunez@mail.com',     NULL,         22, 12),
+-- Estos 2 estudiantes no tienen programa asignado (huérfanos para LEFT JOIN)
+('1029', 'Luciana',   'Aguilar',   'luciana.aguilar@mail.com',  '3229999999', 20, NULL),
+('1030', 'Esteban',   'Vega',      'esteban.vega@mail.com',     '3230000000', 23, NULL);
+
+-- ============================================
+-- PARTE 2: INSERCIÓN DE DATOS — schedules (30)
+-- ============================================
+
+INSERT INTO schedules (program_id, instructor_id, day, start_time, end_time) VALUES
+( 1,  1, 'Lunes',      '07:00:00', '09:00:00'),
+( 1,  1, 'Miércoles',  '07:00:00', '09:00:00'),
+( 1,  1, 'Viernes',    '07:00:00', '09:00:00'),
+( 2,  2, 'Lunes',      '09:00:00', '11:00:00'),
+( 2,  2, 'Jueves',     '09:00:00', '11:00:00'),
+( 3,  3, 'Martes',     '10:00:00', '12:00:00'),
+( 3,  3, 'Jueves',     '10:00:00', '12:00:00'),
+( 4,  4, 'Lunes',      '14:00:00', '16:00:00'),
+( 4,  4, 'Miércoles',  '14:00:00', '16:00:00'),
+( 5,  5, 'Martes',     '07:00:00', '09:00:00'),
+( 5,  5, 'Viernes',    '07:00:00', '09:00:00'),
+( 6,  6, 'Miércoles',  '09:00:00', '11:00:00'),
+( 6,  6, 'Viernes',    '09:00:00', '11:00:00'),
+( 7,  7, 'Lunes',      '16:00:00', '18:00:00'),
+( 7,  7, 'Miércoles',  '16:00:00', '18:00:00'),
+( 8,  8, 'Martes',     '14:00:00', '16:00:00'),
+( 8,  8, 'Jueves',     '14:00:00', '16:00:00'),
+( 9,  9, 'Lunes',      '11:00:00', '13:00:00'),
+( 9,  9, 'Viernes',    '11:00:00', '13:00:00'),
+(10, 10, 'Martes',     '16:00:00', '18:00:00'),
+(10, 10, 'Jueves',     '16:00:00', '18:00:00'),
+(11, 11, 'Lunes',      '18:00:00', '20:00:00'),
+(11, 11, 'Miércoles',  '18:00:00', '20:00:00'),
+(12, 12, 'Martes',     '18:00:00', '20:00:00'),
+(12, 12, 'Jueves',     '18:00:00', '20:00:00'),
+(13, 13, 'Lunes',      '07:00:00', '09:00:00'),
+(14, 14, 'Martes',     '09:00:00', '11:00:00'),
+(15, 15, 'Miércoles',  '11:00:00', '13:00:00'),
+(16, 16, 'Jueves',     '14:00:00', '16:00:00'),
+(17, 17, 'Viernes',    '16:00:00', '18:00:00');
+
+-- ============================================
+-- PARTE 3: CONSULTAS CON JOIN
+-- ============================================
+
+-- CONSULTA 1: INNER JOIN — estudiantes con su programa
+-- Solo muestra estudiantes que tienen programa asignado
+SELECT
+    s.student_id,
+    CONCAT(s.first_name, ' ', s.last_name) AS estudiante,
+    s.age                                   AS edad,
+    p.program_name                          AS programa,
+    p.duration_months                       AS duracion_meses
+FROM students s
+INNER JOIN programs p ON s.program_id = p.program_id
+ORDER BY p.program_name, s.last_name;
+
+
+-- CONSULTA 2: INNER JOIN con tres tablas
+-- Horarios con nombre del programa e instructor
+SELECT
+    p.program_name                              AS programa,
+    CONCAT(i.first_name, ' ', i.last_name)     AS instructor,
+    sc.day                                      AS dia,
+    sc.start_time                               AS hora_inicio,
+    sc.end_time                                 AS hora_fin
+FROM schedules sc
+INNER JOIN programs    p ON sc.program_id    = p.program_id
+INNER JOIN instructors i ON sc.instructor_id = i.instructor_id
+ORDER BY p.program_name, sc.day;
+
+
+-- CONSULTA 3: INNER JOIN con agregación
+-- Cantidad de estudiantes y promedio de edad por programa
+SELECT
+    p.program_name                  AS programa,
+    COUNT(s.student_id)             AS total_estudiantes,
+    ROUND(AVG(s.age), 1)            AS promedio_edad,
+    p.cost                          AS costo_programa
+FROM programs p
+INNER JOIN students s ON s.program_id = p.program_id
+GROUP BY p.program_id, p.program_name, p.cost
+ORDER BY total_estudiantes DESC;
+
+
+-- CONSULTA 4: LEFT JOIN — todos los programas aunque no tengan estudiantes
+-- Los programas sin estudiantes muestran NULL en las columnas del estudiante
+SELECT
+    p.program_name                              AS programa,
+    CONCAT(s.first_name, ' ', s.last_name)     AS estudiante,
+    COALESCE(s.email, 'Sin estudiantes')        AS email
+FROM programs p
+LEFT JOIN students s ON s.program_id = p.program_id
+ORDER BY p.program_name;
+
+
+-- CONSULTA 5: LEFT JOIN — detectar programas sin estudiantes (huérfanos)
+SELECT
+    p.program_name  AS programa_sin_estudiantes,
+    p.cost          AS costo
+FROM programs p
+LEFT JOIN students s ON s.program_id = p.program_id
+WHERE s.student_id IS NULL
+ORDER BY p.program_name;
+
+
+-- CONSULTA 6: LEFT JOIN — detectar estudiantes sin programa asignado
+SELECT
+    CONCAT(s.first_name, ' ', s.last_name)  AS estudiante,
+    s.identification                         AS identificacion,
+    s.email                                  AS email
+FROM students s
+LEFT JOIN programs p ON s.program_id = p.program_id
+WHERE p.program_id IS NULL;
+
+
+-- CONSULTA 7: RIGHT JOIN — todos los instructores aunque no tengan programa
+-- Instructores sin programa asignado aparecen con program_name = NULL
+SELECT
+    CONCAT(i.first_name, ' ', i.last_name)      AS instructor,
+    i.salary                                     AS salario,
+    COALESCE(p.program_name, 'Sin programa')     AS programa
+FROM programs p
+RIGHT JOIN instructors i ON i.program_id = p.program_id
+ORDER BY programa;
+
+
+-- CONSULTA 8: RIGHT JOIN — detectar instructores sin programa asignado
+SELECT
+    CONCAT(i.first_name, ' ', i.last_name)  AS instructor_sin_programa,
+    i.email                                  AS email,
+    i.salary                                 AS salario
+FROM programs p
+RIGHT JOIN instructors i ON i.program_id = p.program_id
+WHERE p.program_id IS NULL;
+
+
+-- CONSULTA 9: Reporte agregado — clases por programa con LEFT JOIN + COUNT
+-- Incluye programas aunque no tengan horario registrado (COUNT = 0)
+SELECT
+    p.program_name          AS programa,
+    COUNT(sc.schedule_id)   AS total_clases_semana
+FROM programs p
+LEFT JOIN schedules sc ON sc.program_id = p.program_id
+GROUP BY p.program_id, p.program_name
+ORDER BY total_clases_semana DESC;

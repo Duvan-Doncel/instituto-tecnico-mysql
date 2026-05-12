@@ -10,12 +10,12 @@
 
 -- Cuenta cuántos empleados hay en cada departamento:
 
--- SELECT
---     department_id,
---     COUNT(*) AS total
--- FROM   employees
--- GROUP BY department_id
--- ORDER BY total DESC;
+SELECT
+    department_id,
+    COUNT(*) AS total
+FROM   employees
+GROUP BY department_id
+ORDER BY total DESC;
 
 
 -- ============================================
@@ -24,13 +24,13 @@
 
 -- Muestra department_id, total de empleados, promedio y masa salarial:
 
--- SELECT
---     department_id,
---     COUNT(*)               AS total,
---     ROUND(AVG(salary), 2)  AS promedio,
---     SUM(salary)            AS masa_salarial
--- FROM   employees
--- GROUP BY department_id;
+SELECT
+    department_id,
+    COUNT(*)               AS total,
+    ROUND(AVG(salary), 2)  AS promedio,
+    SUM(salary)            AS masa_salarial
+FROM   employees
+GROUP BY department_id;
 
 
 -- ============================================
@@ -39,10 +39,10 @@
 
 -- Muestra solo departamentos con más de 1 empleado:
 
--- SELECT department_id, COUNT(*) AS total
--- FROM   employees
--- GROUP BY department_id
--- HAVING COUNT(*) > 1;
+SELECT department_id, COUNT(*) AS total
+FROM   employees
+GROUP BY department_id
+HAVING COUNT(*) > 1;
 
 
 -- ============================================
@@ -52,11 +52,11 @@
 -- Departamentos con promedio > 65000,
 -- considerando solo empleados con salary > 55000:
 
--- SELECT
---     department_id,
---     ROUND(AVG(salary), 2) AS promedio
--- FROM   employees
--- WHERE  salary > 55000
--- GROUP BY department_id
--- HAVING AVG(salary) > 65000
--- ORDER BY promedio DESC;
+SELECT
+    department_id,
+    ROUND(AVG(salary), 2) AS promedio
+FROM   employees
+WHERE  salary > 55000
+GROUP BY department_id
+HAVING AVG(salary) > 65000
+ORDER BY promedio DESC;
