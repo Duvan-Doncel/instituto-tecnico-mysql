@@ -2,18 +2,9 @@
 -- PROYECTO SEMANAL: Ranking con Window Functions
 -- Semana 14 — Window Functions (ROW_NUMBER, RANK, DENSE_RANK)
 -- PostgreSQL 16
+-- Instituto Técnico
+-- Entidades: categories (áreas académicas), items (programas)
 -- ============================================
-
--- NOTA PARA EL APRENDIZ:
--- Adapta este esquema a tu dominio asignado.
--- Ejemplos:
---   Biblioteca  → books, members, loans
---   Farmacia    → medicines, sales, inventory
---   Gimnasio    → members, routines, attendance
---   Restaurante → dishes, tables, orders
-
--- TODO: Renombrar las tablas según tu dominio
--- TODO: Agregar columnas específicas de tu dominio
 
 DROP TABLE IF EXISTS items CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
@@ -26,61 +17,91 @@ CREATE TABLE categories (
 CREATE TABLE items (
     id          SERIAL         PRIMARY KEY,
     name        TEXT           NOT NULL,
-    value       NUMERIC(10, 2) NOT NULL,  -- TODO: renombrar según dominio (precio, ventas, etc.)
+    value       NUMERIC(10, 2) NOT NULL,  -- costo del programa
     category_id INT            REFERENCES categories (id),
     is_active   BOOLEAN        NOT NULL DEFAULT TRUE
-    -- TODO: Agregar columnas específicas
 );
 
--- TODO: Insertar datos representativos de tu dominio (mínimo 10 filas)
--- Incluir al menos 2 items con el mismo valor para demostrar empates
+-- ============================================
+-- INSERCIÓN DE DATOS
+-- Incluye 1 duplicado exacto por nombre (para TODO 1)
+-- e items con el mismo valor (para TODO 2, empate real)
+-- ============================================
+
 INSERT INTO categories (name) VALUES
-    ('Categoría A'),  -- TODO: reemplazar con nombres reales
-    ('Categoría B'),
-    ('Categoría C');
+    ('Tecnología'),
+    ('Salud'),
+    ('Diseño');
 
 INSERT INTO items (name, value, category_id) VALUES
-    ('Item 1', 1000, 1), -- TODO: reemplazar con datos reales
-    ('Item 2', 1000, 1), -- empate intencional para demostrar RANK vs DENSE_RANK
-    ('Item 3',  800, 1),
-    ('Item 4',  950, 2),
-    ('Item 5',  700, 2),
-    ('Item 6', 1200, 3),
-    ('Item 7',  850, 3);
+    ('Desarrollo de Software',   4500000, 1),
+    ('Ciberseguridad',           4900000, 1),
+    ('Inteligencia Artificial',  4900000, 1),  -- empate con Ciberseguridad
+    ('Redes y Telecomunicaciones', 4200000, 1),
+    ('Enfermería Auxiliar',      5200000, 2),
+    ('Regencia de Farmacia',     5100000, 2),
+    ('Salud Ocupacional',        4000000, 2),
+    ('Diseño Gráfico',           3800000, 3),
+    ('Diseño UX/UI',             3600000, 3),
+    ('Diseño Gráfico',           3800000, 3);  -- duplicado exacto para TODO 1
 
 
 -- ============================================
--- TODO 1: Eliminar duplicados con ROW_NUMBER()
+-- CONSULTA 1: Eliminar duplicados con ROW_NUMBER()
+-- Se queda con un solo registro por nombre (el de menor id)
 -- ============================================
--- Escenario: tienes registros duplicados de items por nombre.
--- Usa ROW_NUMBER() para quedarte con uno por nombre.
--- Pista: CTE con ROW_NUMBER() PARTITION BY name ORDER BY id,
---        luego WHERE rn = 1 en el SELECT exterior.
 
--- TODO: Implementar la consulta de deduplicación por nombre
--- Debe mostrar: id, name, value, category_id
-
-
--- ============================================
--- TODO 2: RANK y DENSE_RANK por categoría
--- ============================================
--- Clasifica los items por valor dentro de cada categoría.
--- Elige entre RANK o DENSE_RANK según necesites ilustrar
--- el comportamiento con empates de tu dominio.
--- Pista: OVER (PARTITION BY category_id ORDER BY value DESC)
-
--- TODO: Implementar el ranking por categoría
--- Debe mostrar: name, value, category_id, rnk (o dense_rnk)
--- Los empates deben ser visibles en el resultado
+WITH deduped AS (
+    SELECT
+        id,
+        name,
+        value,
+        category_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY name
+            ORDER BY id
+        ) AS rn
+    FROM items
+)
+SELECT id, name, value, category_id
+FROM deduped
+WHERE rn = 1
+ORDER BY id;
 
 
 -- ============================================
--- TODO 3: Top-N por grupo con CTE
+-- CONSULTA 2: RANK y DENSE_RANK por categoría
+-- Usa ambas funciones para mostrar la diferencia
+-- con el empate real entre Ciberseguridad e IA
 -- ============================================
--- Obtén los 2 items de mayor valor por categoría.
--- Pista: CTE que calcula DENSE_RANK por categoría,
---        luego filtra WHERE dense_rnk <= 2 en el exterior.
 
--- TODO: Implementar la consulta top-2 por categoría
--- Debe incluir: name, value, category_id, dense_rnk
--- Ordena por category_id, dense_rnk
+SELECT
+    name,
+    value,
+    category_id,
+    RANK()       OVER (PARTITION BY category_id ORDER BY value DESC) AS rnk,
+    DENSE_RANK() OVER (PARTITION BY category_id ORDER BY value DESC) AS dense_rnk
+FROM items
+ORDER BY category_id, value DESC;
+
+
+-- ============================================
+-- CONSULTA 3: Top-2 por categoría con CTE
+-- Los 2 programas de mayor costo por área
+-- ============================================
+
+WITH ranked AS (
+    SELECT
+        name,
+        value,
+        category_id,
+        DENSE_RANK() OVER (
+            PARTITION BY category_id
+            ORDER BY value DESC
+        ) AS dense_rnk
+    FROM items
+)
+SELECT name, value, category_id, dense_rnk
+FROM ranked
+WHERE dense_rnk <= 2
+ORDER BY category_id, dense_rnk;
